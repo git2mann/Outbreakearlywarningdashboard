@@ -119,6 +119,8 @@
     --default-mono-font-family: var(--font-mono);
     --default-mono-font-feature-settings: var(--font-mono--font-feature-settings);
     --default-mono-font-variation-settings: var(--font-mono--font-variation-settings);
+    --color-background: #fff;
+    --color-foreground: #0a0a0a;
   }
 }
 
@@ -424,8 +426,8 @@
   }
 
   body {
-    background-color: oklch(1 0 0);
-    color: oklch(.145 0 0);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
   }
 
   h1 {
@@ -925,7 +927,7 @@
   }
 
   .bg-background {
-    background-color: oklch(1 0 0);
+    background-color: var(--color-background);
   }
 
   .bg-blue-50 {
@@ -1167,8 +1169,12 @@
     color: var(--color-blue-900);
   }
 
-  .text-card-foreground, .text-foreground {
+  .text-card-foreground {
     color: oklch(.145 0 0);
+  }
+
+  .text-foreground {
+    color: var(--color-foreground);
   }
 
   .text-gray-300 {
@@ -1925,7 +1931,7 @@
 
   @media (prefers-color-scheme: dark) {
     .dark\:data-\[state\=active\]\:text-foreground[data-state="active"] {
-      color: oklch(.145 0 0);
+      color: var(--color-foreground);
     }
   }
 
