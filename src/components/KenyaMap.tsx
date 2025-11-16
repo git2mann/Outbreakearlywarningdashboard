@@ -30,9 +30,8 @@ export function KenyaMap({ onCountyClick, diseaseFilter }: KenyaMapProps) {
                 height="120"
                 fill={color}
                 stroke="#fff"
-                className="dark:stroke-gray-600"
                 strokeWidth="3"
-                className="cursor-pointer hover:opacity-80 transition-opacity"
+                className="dark:stroke-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => onCountyClick(county.name)}
               />
               <text

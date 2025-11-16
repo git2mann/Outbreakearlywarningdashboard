@@ -1,6 +1,7 @@
 import { MapPin, AlertTriangle } from 'lucide-react';
 import { DiseaseFilter } from '../App';
-import { getTopRiskySubCounties } from '../data/mockData';
+import { useEffect, useState } from 'react';
+import { fetchOutbreakData } from '../api';
 import { KenyaMap } from './KenyaMap';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -13,12 +14,61 @@ interface MainDashboardProps {
 }
 
 export function MainDashboard({ onCountyClick, diseaseFilter, onFilterChange }: MainDashboardProps) {
-  const diseaseParam = diseaseFilter === 'all' ? undefined : diseaseFilter;
-  const topRisks = getTopRiskySubCounties(5, diseaseParam);
+  const [outbreakData, setOutbreakData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOutbreakData().then(data => {
+      setOutbreakData(data);
+      setLoading(false);
+    });
+  }, []);
+
+  // Filter and get top 5 risks by disease
+  const filtered = diseaseFilter === 'all'
+    ? outbreakData
+    : outbreakData.filter(d => d.disease && d.disease.toLowerCase() === diseaseFilter);
+
+  // Calculate the total cases for each unique sub-county
+  type SubCountyAggregate = {
+    sub_county: string;
+    county: string;
+    totalCases: number;
+    disease: string;
+    outbreak: number;
+  };
+
+  const subCountyAggregates = filtered.reduce((acc, row) => {
+    const key = row.sub_county;
+    if (!acc.has(key)) {
+      acc.set(key, {
+        sub_county: row.sub_county,
+        county: row.county,
+        totalCases: 0,
+        disease: diseaseFilter === 'all'
+          ? 'Multiple'
+          : row.disease
+            ? row.disease.charAt(0).toUpperCase() + row.disease.slice(1)
+            : diseaseFilter,
+        outbreak: 1
+      } as SubCountyAggregate);
+    }
+    acc.get(key)!.totalCases += Number(row.cases);
+    return acc;
+  }, new Map<string, SubCountyAggregate>());
+
+  const topRisks = (Array.from(subCountyAggregates.values()) as SubCountyAggregate[])
+    .sort((a, b) => b.totalCases - a.totalCases)
+    .slice(0, 5)
+    .map((risk) => ({
+      ...risk,
+      cases: risk.totalCases,
+    }));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-6 space-y-6">
+        {loading && <div className="text-center py-8">Loading outbreak data...</div>}
         {/* Filters */}
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
@@ -79,34 +129,44 @@ export function MainDashboard({ onCountyClick, diseaseFilter, onFilterChange }: 
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {topRisks.map((risk, index) => (
-                    <div
-                      key={`${risk.name}-${risk.disease}`}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white dark:bg-gray-900"
-                      onClick={() => onCountyClick(risk.county)}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
-                              {index + 1}
-                            </span>
-                            <span className="text-gray-900 dark:text-white">{risk.name}</span>
+                  {topRisks.length === 0 ? (
+                    <div className="text-center text-gray-500 py-4">No data available.</div>
+                  ) : (
+                    topRisks.map((risk, index) => (
+                      <div
+                        key={`${risk.sub_county}-${risk.disease}`}
+                        className="p-4 mb-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white dark:bg-gray-900"
+                        onClick={() => onCountyClick(risk.county)}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                                {index + 1}
+                              </span>
+                              <span className="text-gray-900 dark:text-white font-semibold">{risk.sub_county}</span>
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">{risk.county} County</p>
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm">{risk.county} County</p>
+                          <Badge className={risk.disease === 'cholera' ? 'bg-blue-600' : 'bg-orange-600'}>
+                            {risk.disease.charAt(0).toUpperCase() + risk.disease.slice(1)}
+                          </Badge>
                         </div>
-                        <Badge className={risk.disease === 'cholera' ? 'bg-blue-600' : 'bg-orange-600'}>
-                          {risk.disease === 'cholera' ? 'Cholera' : 'Malaria'}
-                        </Badge>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Cases:</span>
+                          <span className="bg-gray-100 text-gray-900 px-3 py-1 rounded font-mono">
+                            {risk.cases.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Outbreak:</span>
+                          <span className={risk.outbreak ? "bg-red-100 text-red-800 px-3 py-1 rounded" : "bg-green-100 text-green-800 px-3 py-1 rounded"}>
+                            {risk.outbreak ? "Yes" : "No"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Risk Score:</span>
-                        <span className={`${getRiskColor(risk.riskScore)} px-3 py-1 rounded`}>
-                          {risk.riskScore.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
