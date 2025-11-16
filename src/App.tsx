@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainDashboard } from './components/MainDashboard';
 import { RegionDrillDown } from './components/RegionDrillDown';
+import { Layout } from './components/Layout';
+import { Analytics } from './components/Analytics';
+import { Reports } from './components/Reports';
+import { Alerts } from './components/Alerts';
+import { Profile } from './components/Profile';
 
 export interface CountyData {
   name: string;
@@ -44,26 +49,66 @@ export interface FeatureContribution {
 }
 
 export type DiseaseFilter = 'all' | 'cholera' | 'malaria';
+export type NavigationTab = 'dashboard' | 'analytics' | 'reports' | 'alerts' | 'profile';
 
 function App() {
   const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
   const [diseaseFilter, setDiseaseFilter] = useState<DiseaseFilter>('all');
+  const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
+  const [darkMode, setDarkMode] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {selectedCounty ? (
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
+  // Apply dark mode class to document root
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  const renderContent = () => {
+    if (selectedCounty && activeTab === 'dashboard') {
+      return (
         <RegionDrillDown
           countyName={selectedCounty}
           onBack={() => setSelectedCounty(null)}
         />
-      ) : (
-        <MainDashboard
-          onCountyClick={setSelectedCounty}
-          diseaseFilter={diseaseFilter}
-          onFilterChange={setDiseaseFilter}
-        />
-      )}
-    </div>
+      );
+    }
+
+    switch (activeTab) {
+      case 'dashboard':
+        return (
+          <MainDashboard
+            onCountyClick={setSelectedCounty}
+            diseaseFilter={diseaseFilter}
+            onFilterChange={setDiseaseFilter}
+          />
+        );
+      case 'analytics':
+        return <Analytics />;
+      case 'reports':
+        return <Reports />;
+      case 'alerts':
+        return <Alerts />;
+      case 'profile':
+        return <Profile />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Layout
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      darkMode={darkMode}
+      onToggleDarkMode={toggleDarkMode}
+    >
+      {renderContent()}
+    </Layout>
   );
 }
 

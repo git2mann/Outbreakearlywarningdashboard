@@ -31,25 +31,25 @@ export function RegionDrillDown({ countyName, onBack }: RegionDrillDownProps) {
   const subCounty = county.subCounties[0];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <Button onClick={onBack} variant="outline" className="mb-3">
+          <Button onClick={onBack} variant="outline" className="mb-3 dark:border-gray-600 dark:text-gray-300">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
-          <h1 className="text-gray-900">{county.name} County - Weekly Risk Assessment</h1>
-          <p className="text-gray-600 mt-1">Sub-County: {subCounty.name}</p>
+          <h1 className="text-gray-900 dark:text-white">{county.name} County - Weekly Risk Assessment</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Sub-County: {subCounty.name}</p>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Risk Gauges */}
         <div className="grid md:grid-cols-2 gap-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="text-blue-600 flex items-center gap-2">
+              <CardTitle className="text-blue-600 dark:text-blue-500 flex items-center gap-2">
                 <Droplet className="h-5 w-5" />
                 Cholera Risk Assessment
               </CardTitle>
@@ -59,9 +59,9 @@ export function RegionDrillDown({ countyName, onBack }: RegionDrillDownProps) {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="text-orange-600 flex items-center gap-2">
+              <CardTitle className="text-orange-600 dark:text-orange-500 flex items-center gap-2">
                 <Bug className="h-5 w-5" />
                 Malaria Risk Assessment
               </CardTitle>
@@ -74,7 +74,7 @@ export function RegionDrillDown({ countyName, onBack }: RegionDrillDownProps) {
 
         {/* XAI Explanations */}
         <Tabs defaultValue="malaria" className="w-full">
-          <TabsList className="grid w-full md:w-96 grid-cols-2">
+          <TabsList className="grid w-full md:w-96 grid-cols-2 dark:bg-gray-800">
             <TabsTrigger value="malaria" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">
               Malaria Analysis
             </TabsTrigger>
@@ -101,9 +101,9 @@ export function RegionDrillDown({ countyName, onBack }: RegionDrillDownProps) {
         </Tabs>
 
         {/* Trend Charts */}
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-gray-900">Environmental Data Trends (Last 8 Weeks)</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-white">Environmental Data Trends (Last 8 Weeks)</CardTitle>
           </CardHeader>
           <CardContent>
             <TrendCharts weeklyData={subCounty.weeklyData} />
@@ -112,19 +112,19 @@ export function RegionDrillDown({ countyName, onBack }: RegionDrillDownProps) {
 
         {/* Sub-Counties Overview */}
         {county.subCounties.length > 1 && (
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="text-gray-900">All Sub-Counties in {county.name}</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-white">All Sub-Counties in {county.name}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {county.subCounties.map((sub) => (
-                  <div key={sub.name} className="p-4 border border-gray-200 rounded-lg bg-white">
-                    <h3 className="text-gray-900 mb-3">{sub.name}</h3>
+                  <div key={sub.name} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
+                    <h3 className="text-gray-900 dark:text-white mb-3">{sub.name}</h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 flex items-center gap-1">
-                          <Droplet className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                          <Droplet className="h-4 w-4 text-blue-600 dark:text-blue-500" />
                           Cholera
                         </span>
                         <span className={`text-sm px-2 py-1 rounded ${getRiskColorClass(sub.choleraRisk)}`}>
@@ -132,8 +132,8 @@ export function RegionDrillDown({ countyName, onBack }: RegionDrillDownProps) {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 flex items-center gap-1">
-                          <Bug className="h-4 w-4 text-orange-600" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                          <Bug className="h-4 w-4 text-orange-600 dark:text-orange-500" />
                           Malaria
                         </span>
                         <span className={`text-sm px-2 py-1 rounded ${getRiskColorClass(sub.malariaRisk)}`}>

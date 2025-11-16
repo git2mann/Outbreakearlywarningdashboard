@@ -8,7 +8,7 @@ interface KenyaMapProps {
 
 export function KenyaMap({ onCountyClick, diseaseFilter }: KenyaMapProps) {
   return (
-    <div className="w-full aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden relative">
+    <div className="w-full aspect-[4/3] bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden relative">
       <svg viewBox="0 0 800 600" className="w-full h-full">
         {/* Simplified Kenya map with county representations */}
         {KENYA_COUNTIES.map((county, index) => {
@@ -30,6 +30,7 @@ export function KenyaMap({ onCountyClick, diseaseFilter }: KenyaMapProps) {
                 height="120"
                 fill={color}
                 stroke="#fff"
+                className="dark:stroke-gray-600"
                 strokeWidth="3"
                 className="cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => onCountyClick(county.name)}
@@ -38,7 +39,7 @@ export function KenyaMap({ onCountyClick, diseaseFilter }: KenyaMapProps) {
                 x={position.x + 75}
                 y={position.y + 55}
                 textAnchor="middle"
-                className="pointer-events-none fill-gray-900 text-sm"
+                className="pointer-events-none fill-gray-900 dark:fill-white text-sm"
               >
                 {county.name}
               </text>
@@ -46,7 +47,7 @@ export function KenyaMap({ onCountyClick, diseaseFilter }: KenyaMapProps) {
                 x={position.x + 75}
                 y={position.y + 75}
                 textAnchor="middle"
-                className="pointer-events-none fill-gray-700 text-xs"
+                className="pointer-events-none fill-gray-700 dark:fill-gray-300 text-xs"
               >
                 Risk: {risk.toFixed(2)}
               </text>

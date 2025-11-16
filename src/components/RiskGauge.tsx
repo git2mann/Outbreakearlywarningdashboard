@@ -20,6 +20,7 @@ export function RiskGauge({ value, disease }: RiskGaugeProps) {
             d="M 10 90 A 80 80 0 0 1 190 90"
             fill="none"
             stroke="#e5e7eb"
+            className="dark:stroke-gray-700"
             strokeWidth="20"
             strokeLinecap="round"
           />
@@ -65,16 +66,16 @@ export function RiskGauge({ value, disease }: RiskGaugeProps) {
         {/* Center value */}
         <div className="absolute inset-0 flex items-end justify-center pb-2">
           <div className="text-center">
-            <div className="text-3xl" style={{ color: riskColor }}>
+            <div className="text-3xl dark:text-white" style={{ color: riskColor }}>
               {value.toFixed(2)}
             </div>
-            <div className="text-sm text-gray-600 mt-1">{riskLevel} Risk</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{riskLevel} Risk</div>
           </div>
         </div>
       </div>
       
       {/* Scale labels */}
-      <div className="w-64 flex justify-between mt-2 text-xs text-gray-600">
+      <div className="w-64 flex justify-between mt-2 text-xs text-gray-600 dark:text-gray-400">
         <span>0.0</span>
         <span>0.33</span>
         <span>0.67</span>
