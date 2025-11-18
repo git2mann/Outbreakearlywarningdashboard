@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
-import { MainDashboard } from './components/MainDashboard';
-import { RegionDrillDown } from './components/RegionDrillDown';
 import { Layout } from './components/Layout';
-import { Analytics } from './components/Analytics';
-import { Reports } from './components/Reports';
+import { MainDashboard } from './components/MainDashboard';
+import { Analytics } from './components/AnalyticsTabbed';
+import { Predictions } from './components/Predictions';
+import { ResourceOptimization } from './components/ResourceOptimization';
 import { Alerts } from './components/Alerts';
+import { Reports } from './components/ReportsTabbed';
+import { DataCollection } from './components/DataCollection';
+import { Settings } from './components/SettingsTabbed';
 import { Profile } from './components/Profile';
+import { RegionDrillDown } from './components/RegionDrillDown';
+import { LoadingProvider } from './contexts/LoadingContext';
+import './styles/globals.css';
 
 export interface CountyData {
   name: string;
@@ -49,24 +55,14 @@ export interface FeatureContribution {
 }
 
 export type DiseaseFilter = 'all' | 'cholera' | 'malaria';
-export type NavigationTab = 'dashboard' | 'analytics' | 'reports' | 'alerts' | 'profile';
+export type NavigationTab = 'dashboard' | 'data-collection' | 'predictions' | 'resources' | 'analytics' | 'reports' | 'alerts' | 'settings' | 'profile';
+export type UserRole = 'chv' | 'official';
 
 function App() {
   const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
   const [diseaseFilter, setDiseaseFilter] = useState<DiseaseFilter>('all');
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
-  const [darkMode, setDarkMode] = useState(false);
-
-  const toggleDarkMode = () => setDarkMode(!darkMode);
-
-  // Apply dark mode class to document root
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+  const [userRole, setUserRole] = useState<UserRole>('official');
 
   const renderContent = () => {
     if (selectedCounty && activeTab === 'dashboard') {
@@ -85,30 +81,41 @@ function App() {
             onCountyClick={setSelectedCounty}
             diseaseFilter={diseaseFilter}
             onFilterChange={setDiseaseFilter}
+            userRole={userRole}
           />
         );
+      case 'data-collection':
+        return <DataCollection userRole={userRole} />;
+      case 'predictions':
+        return <Predictions />;
+      case 'resources':
+        return <ResourceOptimization />;
       case 'analytics':
         return <Analytics />;
       case 'reports':
         return <Reports />;
       case 'alerts':
-        return <Alerts />;
+        return <Alerts userRole={userRole} />;
+      case 'settings':
+        return <Settings />;
       case 'profile':
-        return <Profile />;
+        return <Profile userRole={userRole} />;
       default:
         return null;
     }
   };
 
   return (
-    <Layout
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      darkMode={darkMode}
-      onToggleDarkMode={toggleDarkMode}
-    >
-      {renderContent()}
-    </Layout>
+    <LoadingProvider>
+      <Layout
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        userRole={userRole}
+        onRoleChange={setUserRole}
+      >
+        {renderContent()}
+      </Layout>
+    </LoadingProvider>
   );
 }
 

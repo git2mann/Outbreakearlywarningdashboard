@@ -31,13 +31,12 @@ export function RegionDrillDown({ countyName, onBack }: RegionDrillDownProps) {
   const subCounty = county.subCounties[0];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <header className="bg-white dark:bg-gray-800/90 border-b border-gray-200 dark:border-gray-700 shadow-sm backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <Button onClick={onBack} variant="outline" className="mb-3 dark:border-gray-600 dark:text-gray-300">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+          <Button onClick={onBack} variant="outline" className="mb-3 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+            ← Back to Map
           </Button>
           <h1 className="text-gray-900 dark:text-white">{county.name} County - Weekly Risk Assessment</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Sub-County: {subCounty.name}</p>

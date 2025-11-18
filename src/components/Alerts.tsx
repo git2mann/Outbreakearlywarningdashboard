@@ -1,9 +1,23 @@
-import { Bell, AlertTriangle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { AlertTriangle, Bell, Eye, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { UserRole } from '../App';
+import { useLoading } from '../contexts/LoadingContext';
+import { AlertsSkeleton } from './skeletons/AlertsSkeleton';
 
-export function Alerts() {
+interface AlertsProps {
+  userRole: UserRole;
+}
+
+export function Alerts({ userRole }: AlertsProps) {
+  const { isLoading } = useLoading();
+
+  if (isLoading) {
+    return <AlertsSkeleton />;
+  }
+
   const alerts = [
     {
       id: 1,

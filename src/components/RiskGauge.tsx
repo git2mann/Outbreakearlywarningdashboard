@@ -8,78 +8,120 @@ export function RiskGauge({ value, disease }: RiskGaugeProps) {
   const rotation = (value * 180) - 90; // -90 to 90 degrees
   
   const riskLevel = value < 0.34 ? 'Low' : value < 0.67 ? 'Moderate' : 'High';
-  const riskColor = value < 0.34 ? '#22c55e' : value < 0.67 ? '#eab308' : '#ef4444';
-  const diseaseColor = disease === 'cholera' ? '#2563eb' : '#ea580c';
+  const riskColor = value < 0.34 ? '#10b981' : value < 0.67 ? '#f59e0b' : '#ef4444';
+  const diseaseColor = disease === 'cholera' ? '#3b82f6' : '#f97316';
 
   return (
-    <div className="flex flex-col items-center py-6">
-      <div className="relative w-64 h-32">
+    <div className="flex flex-col items-center py-4">
+      <div className="relative w-48 h-24">
         <svg viewBox="0 0 200 100" className="w-full h-full">
-          {/* Background arc */}
+          {/* Professional gradient definition */}
+          <defs>
+            <linearGradient id={`gaugeGradient-${disease}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+              <stop offset="50%" style={{ stopColor: '#f59e0b', stopOpacity: 1 }} />
+              <stop offset="100%" style={{ stopColor: '#ef4444', stopOpacity: 1 }} />
+            </linearGradient>
+            
+            {/* Subtle shadow for depth */}
+            <filter id={`shadow-${disease}`} x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="1" stdDeviation="1" floodOpacity="0.2"/>
+            </filter>
+          </defs>
+          
+          {/* Background arc - thinner and more subtle */}
           <path
-            d="M 10 90 A 80 80 0 0 1 190 90"
+            d="M 20 85 A 65 65 0 0 1 180 85"
             fill="none"
             stroke="#e5e7eb"
             className="dark:stroke-gray-700"
-            strokeWidth="20"
+            strokeWidth="12"
             strokeLinecap="round"
           />
           
-          {/* Colored segments */}
+          {/* Risk level segments - professional design */}
           <path
-            d="M 10 90 A 80 80 0 0 1 63.3 23.3"
+            d="M 20 85 A 65 65 0 0 1 180 85"
             fill="none"
-            stroke="#22c55e"
-            strokeWidth="20"
+            stroke={`url(#gaugeGradient-${disease})`}
+            strokeWidth="8"
             strokeLinecap="round"
-          />
-          <path
-            d="M 63.3 23.3 A 80 80 0 0 1 136.7 23.3"
-            fill="none"
-            stroke="#eab308"
-            strokeWidth="20"
-            strokeLinecap="round"
-          />
-          <path
-            d="M 136.7 23.3 A 80 80 0 0 1 190 90"
-            fill="none"
-            stroke="#ef4444"
-            strokeWidth="20"
-            strokeLinecap="round"
+            opacity="0.9"
           />
           
-          {/* Needle */}
-          <g transform={`rotate(${rotation} 100 90)`}>
-            <line
-              x1="100"
-              y1="90"
-              x2="100"
-              y2="20"
-              stroke={diseaseColor}
-              strokeWidth="3"
-              strokeLinecap="round"
+          {/* Tick marks for scale */}
+          {[0, 0.33, 0.67, 1].map((tick, i) => {
+            const angle = (tick * 180) - 90;
+            const rad = (angle * Math.PI) / 180;
+            const x1 = 100 + 65 * Math.cos(rad);
+            const y1 = 85 + 65 * Math.sin(rad);
+            const x2 = 100 + 72 * Math.cos(rad);
+            const y2 = 85 + 72 * Math.sin(rad);
+            
+            return (
+              <line
+                key={i}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="#94a3b8"
+                className="dark:stroke-gray-600"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            );
+          })}
+          
+          {/* Needle - sleek professional design */}
+          <g transform={`rotate(${rotation} 100 85)`} filter={`url(#shadow-${disease})`}>
+            {/* Needle shadow/base */}
+            <path
+              d="M 98 85 L 100 25 L 102 85 Z"
+              fill={diseaseColor}
+              opacity="0.9"
             />
-            <circle cx="100" cy="90" r="6" fill={diseaseColor} />
+            {/* Center hub */}
+            <circle cx="100" cy="85" r="6" fill={diseaseColor} />
+            <circle cx="100" cy="85" r="3" fill="white" className="dark:fill-gray-200" />
           </g>
         </svg>
         
-        {/* Center value */}
-        <div className="absolute inset-0 flex items-end justify-center pb-2">
+        {/* Compact center value display */}
+        <div className="absolute inset-0 flex items-center justify-center" style={{ marginTop: '-20px' }}>
           <div className="text-center">
-            <div className="text-3xl dark:text-white" style={{ color: riskColor }}>
-              {value.toFixed(2)}
+            <div 
+              className="text-2xl tracking-tight dark:text-white" 
+              style={{ 
+                color: riskColor,
+                fontVariantNumeric: 'tabular-nums'
+              }}
+            >
+              {(value * 100).toFixed(0)}%
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{riskLevel} Risk</div>
           </div>
         </div>
       </div>
       
-      {/* Scale labels */}
-      <div className="w-64 flex justify-between mt-2 text-xs text-gray-600 dark:text-gray-400">
-        <span>0.0</span>
-        <span>0.33</span>
-        <span>0.67</span>
-        <span>1.0</span>
+      {/* Compact scale labels */}
+      <div className="w-48 flex justify-between text-[10px] text-gray-500 dark:text-gray-500 tracking-tight mt-1">
+        <span>0</span>
+        <span className="text-green-600 dark:text-green-500">Low</span>
+        <span className="text-amber-600 dark:text-amber-500">Mod</span>
+        <span className="text-red-600 dark:text-red-500">High</span>
+        <span>100</span>
+      </div>
+      
+      {/* Risk level badge - professional and compact */}
+      <div 
+        className="mt-2 px-3 py-1 rounded-full text-xs tracking-wide"
+        style={{
+          backgroundColor: `${riskColor}15`,
+          color: riskColor,
+          border: `1px solid ${riskColor}40`
+        }}
+      >
+        {riskLevel} Risk
       </div>
     </div>
   );

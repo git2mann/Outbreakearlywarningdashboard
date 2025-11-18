@@ -20,16 +20,18 @@ export const KENYA_COUNTIES: CountyData[] = [
             features: [
               { name: 'avg_temp', value: 29, displayValue: '29°C', contribution: 0.03, description: 'Slightly elevated' },
               { name: 'avg_rainfall', value: 45, displayValue: '45mm', contribution: 0.02, description: 'Moderate' },
-              { name: 'water_access', value: 0.6, displayValue: '60%', contribution: 0.02, description: 'Limited access' },
+              { name: 'unimproved_sanitation_rate', value: 0.42, displayValue: '42%', contribution: 0.02, description: 'Poor sanitation' },
+              { name: 'mean_ndvi', value: 0.25, displayValue: '0.25', contribution: -0.01, description: 'Low vegetation' },
             ],
             finalRisk: 0.12
           },
           malaria: {
             baseRisk: 0.05,
             features: [
-              { name: 'avg_temp', value: 29, displayValue: '29°C', contribution: 0.65, description: 'In ideal range for vectors' },
+              { name: 'avg_temp', value: 29, displayValue: '29°C', contribution: 0.65, description: 'Ideal range for vectors' },
               { name: 'mean_ndvi', value: 0.30, displayValue: '0.30', contribution: -0.08, description: 'Low vegetation' },
               { name: 'avg_rainfall', value: 45, displayValue: '45mm', contribution: 0.13, description: 'Creates breeding sites' },
+              { name: 'unimproved_sanitation_rate', value: 0.42, displayValue: '42%', contribution: 0.00, description: 'Minimal impact' },
             ],
             finalRisk: 0.75
           }
@@ -47,16 +49,18 @@ export const KENYA_COUNTIES: CountyData[] = [
             features: [
               { name: 'avg_temp', value: 29, displayValue: '29°C', contribution: 0.04, description: 'Elevated' },
               { name: 'avg_rainfall', value: 48, displayValue: '48mm', contribution: 0.03, description: 'Higher rainfall' },
-              { name: 'water_access', value: 0.55, displayValue: '55%', contribution: 0.06, description: 'Poor access' },
+              { name: 'unimproved_sanitation_rate', value: 0.42, displayValue: '42%', contribution: 0.06, description: 'Poor sanitation access' },
+              { name: 'mean_ndvi', value: 0.30, displayValue: '0.30', contribution: 0.00, description: 'Neutral' },
             ],
             finalRisk: 0.18
           },
           malaria: {
             baseRisk: 0.05,
             features: [
-              { name: 'avg_temp', value: 29, displayValue: '29°C', contribution: 0.75, description: 'In ideal range for vectors' },
+              { name: 'avg_temp', value: 29, displayValue: '29°C', contribution: 0.75, description: 'Ideal range for vectors' },
               { name: 'mean_ndvi', value: 0.30, displayValue: '0.30', contribution: -0.12, description: 'Low vegetation' },
               { name: 'avg_rainfall', value: 48, displayValue: '48mm', contribution: 0.20, description: 'Significant breeding sites' },
+              { name: 'unimproved_sanitation_rate', value: 0.42, displayValue: '42%', contribution: 0.00, description: 'Minimal impact' },
             ],
             finalRisk: 0.88
           }
@@ -80,9 +84,10 @@ export const KENYA_COUNTIES: CountyData[] = [
           cholera: {
             baseRisk: 0.05,
             features: [
-              { name: 'water_access', value: 0.35, displayValue: '35%', contribution: 0.45, description: 'Very poor access' },
+              { name: 'unimproved_sanitation_rate', value: 0.65, displayValue: '65%', contribution: 0.45, description: 'Very poor sanitation' },
               { name: 'avg_temp', value: 33, displayValue: '33°C', contribution: 0.15, description: 'High temperature' },
-              { name: 'population_density', value: 850, displayValue: '850/km²', contribution: 0.07, description: 'Crowded areas' },
+              { name: 'avg_rainfall', value: 18, displayValue: '18mm', contribution: 0.07, description: 'Limited water' },
+              { name: 'mean_ndvi', value: 0.15, displayValue: '0.15', contribution: 0.00, description: 'Arid conditions' },
             ],
             finalRisk: 0.72
           },
@@ -92,6 +97,7 @@ export const KENYA_COUNTIES: CountyData[] = [
               { name: 'avg_temp', value: 33, displayValue: '33°C', contribution: -0.10, description: 'Too hot for vectors' },
               { name: 'mean_ndvi', value: 0.15, displayValue: '0.15', contribution: -0.08, description: 'Very low vegetation' },
               { name: 'avg_rainfall', value: 18, displayValue: '18mm', contribution: 0.38, description: 'Limited breeding sites' },
+              { name: 'unimproved_sanitation_rate', value: 0.65, displayValue: '65%', contribution: 0.00, description: 'Not relevant' },
             ],
             finalRisk: 0.25
           }
@@ -115,9 +121,10 @@ export const KENYA_COUNTIES: CountyData[] = [
           cholera: {
             baseRisk: 0.05,
             features: [
-              { name: 'water_access', value: 0.45, displayValue: '45%', contribution: 0.38, description: 'Poor sanitation' },
-              { name: 'population_density', value: 1200, displayValue: '1200/km²', contribution: 0.18, description: 'Very crowded' },
-              { name: 'avg_rainfall', value: 88, displayValue: '88mm', contribution: 0.07, description: 'High rainfall' },
+              { name: 'unimproved_sanitation_rate', value: 0.55, displayValue: '55%', contribution: 0.38, description: 'Poor sanitation' },
+              { name: 'avg_rainfall', value: 88, displayValue: '88mm', contribution: 0.18, description: 'High rainfall' },
+              { name: 'avg_temp', value: 27, displayValue: '27°C', contribution: 0.07, description: 'Moderate temp' },
+              { name: 'mean_ndvi', value: 0.48, displayValue: '0.48', contribution: 0.00, description: 'Good vegetation' },
             ],
             finalRisk: 0.68
           },
@@ -127,6 +134,7 @@ export const KENYA_COUNTIES: CountyData[] = [
               { name: 'avg_temp', value: 27, displayValue: '27°C', contribution: 0.52, description: 'Optimal for vectors' },
               { name: 'mean_ndvi', value: 0.48, displayValue: '0.48', contribution: 0.12, description: 'Good vegetation' },
               { name: 'avg_rainfall', value: 88, displayValue: '88mm', contribution: 0.13, description: 'Abundant breeding sites' },
+              { name: 'unimproved_sanitation_rate', value: 0.55, displayValue: '55%', contribution: 0.00, description: 'Not relevant' },
             ],
             finalRisk: 0.82
           }
@@ -343,4 +351,35 @@ export function getTopRiskySubCounties(limit: number = 5, disease?: 'cholera' | 
   return filtered
     .sort((a, b) => b.riskScore - a.riskScore)
     .slice(0, limit);
+}
+
+export interface FeatureContribution {
+  name: string;
+  value: number;
+  displayValue: string;
+  contribution: number;
+  description: string;
+}
+
+// Actual model features based on simulated_outbreak_data_v15.csv
+export interface ModelFeatures {
+  unimproved_sanitation_rate: number;
+  avg_rainfall: number;
+  mean_ndvi: number;
+  avg_temp: number;
+}
+
+export interface CaseReport {
+  report_id: number;
+  year: number;
+  week: string; // e.g., "2023-01-02/2023-01-08"
+  county: string;
+  sub_county: string;
+  disease: 'Cholera' | 'Malaria';
+  unimproved_sanitation_rate: number;
+  avg_rainfall: number;
+  mean_ndvi: number;
+  avg_temp: number;
+  cases: number;
+  outbreak: 0 | 1;
 }

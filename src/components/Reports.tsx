@@ -1,9 +1,17 @@
-import { FileText, Download, Calendar, Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { FileText, Download, Eye, Calendar } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { useLoading } from '../contexts/LoadingContext';
+import { ReportsSkeleton } from './skeletons/ReportsSkeleton';
 
 export function Reports() {
+  const { isLoading } = useLoading();
+
+  if (isLoading) {
+    return <ReportsSkeleton />;
+  }
+
   const reports = [
     {
       id: 1,
@@ -66,10 +74,6 @@ export function Reports() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
-            <Button className="bg-red-600 hover:bg-red-700">
               <FileText className="h-4 w-4 mr-2" />
               Generate Report
             </Button>
