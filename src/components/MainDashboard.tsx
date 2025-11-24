@@ -1,6 +1,7 @@
 import { MapPin, AlertTriangle, Droplet, Bug } from 'lucide-react';
 import { DiseaseFilter, UserRole } from '../App';
-import { getTopRiskySubCounties } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { fetchOutbreakPredictions } from '../utils/apiHelpers';
 import { KenyaMap } from './KenyaMap';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -16,16 +17,75 @@ interface MainDashboardProps {
   userRole: UserRole;
 }
 
+
 export function MainDashboard({ onCountyClick, diseaseFilter, onFilterChange, userRole }: MainDashboardProps) {
   const { isLoading } = useLoading();
-  const diseaseParam = diseaseFilter === 'all' ? undefined : diseaseFilter;
-  const topRisks = getTopRiskySubCounties(5, diseaseParam);
+  // New state for raw data and local loading status
+  const [outbreakData, setOutbreakData] = useState<any[]>([]);
+  const [localLoading, setLocalLoading] = useState(true);
 
-  if (isLoading) {
+  useEffect(() => {
+    fetchOutbreakPredictions().then((data: any[]) => {
+      setOutbreakData(data);
+      setLocalLoading(false);
+    });
+  }, []);
+
+  const diseaseParam = diseaseFilter === 'all' ? undefined : diseaseFilter;
+
+  // --- START: Corrected Total Risk Aggregation Logic ---
+  type SubCountyAgg = {
+    name: string;
+    county: string;
+    totalCases: number;
+    disease: string;
+    riskScore: number;
+    cases?: number;
+  };
+
+  const filtered = diseaseParam
+    ? outbreakData.filter((d) => d.disease && d.disease.toLowerCase() === diseaseParam)
+    : outbreakData;
+
+  // Aggregate by sub-county, but use model riskScore
+  const subCountyAggregates = filtered.reduce((acc: Map<string, SubCountyAgg>, row: any) => {
+    const key = row.sub_county;
+    if (!acc.has(key)) {
+      acc.set(key, {
+        name: row.sub_county,
+        county: row.county,
+        totalCases: 0,
+        disease: diseaseFilter === 'all' ? 'Multiple' : row.disease,
+        riskScore: 0.0,
+      });
+    }
+    // Instead of summing cases, sum riskScore for all rows matching this sub-county
+    acc.get(key)!.totalCases += row.riskScore;
+    return acc;
+  }, new Map<string, SubCountyAgg>());
+
+  const aggregatedArray: SubCountyAgg[] = Array.from(subCountyAggregates.values());
+  const maxRisk = aggregatedArray.reduce((max, current) => Math.max(max, current.totalCases), 0);
+
+  const topRisks = aggregatedArray
+    .map((risk) => ({
+      ...risk,
+      riskScore: maxRisk > 0 ? risk.totalCases / maxRisk : 0,
+      disease:
+        risk.disease === 'Multiple'
+          ? 'Multiple'
+          : risk.disease.charAt(0).toUpperCase() + risk.disease.slice(1),
+      cases: risk.totalCases,
+    }))
+    .sort((a, b) => b.riskScore - a.riskScore)
+    .slice(0, 5);
+  // --- END: Corrected Total Risk Aggregation Logic ---
+
+  if (isLoading || localLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <div className="container mx-auto px-4 py-6 space-y-6">
-          {/* Role-specific header skeleton */}
+          {/* ... all your existing skeleton code ... */}
           {userRole === 'chv' && (
             <Card className="dark:bg-gray-800/50 dark:border-gray-700">
               <CardContent className="pt-4">
@@ -33,7 +93,6 @@ export function MainDashboard({ onCountyClick, diseaseFilter, onFilterChange, us
               </CardContent>
             </Card>
           )}
-
           {/* Filters skeleton */}
           <Card className="dark:bg-gray-800/50 dark:border-gray-700">
             <CardHeader>
@@ -50,7 +109,6 @@ export function MainDashboard({ onCountyClick, diseaseFilter, onFilterChange, us
               </div>
             </CardContent>
           </Card>
-
           {/* Main Content Grid skeleton */}
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Map skeleton */}
@@ -67,7 +125,6 @@ export function MainDashboard({ onCountyClick, diseaseFilter, onFilterChange, us
                 </CardContent>
               </Card>
             </div>
-
             {/* High Alert List skeleton */}
             <div className="lg:col-span-1">
               <Card className="h-full dark:bg-gray-800 dark:border-gray-700">
@@ -102,7 +159,6 @@ export function MainDashboard({ onCountyClick, diseaseFilter, onFilterChange, us
               </Card>
             </div>
           </div>
-
           {/* Legend skeleton */}
           <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>

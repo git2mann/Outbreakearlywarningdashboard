@@ -3,7 +3,6 @@ import { Layout } from './components/Layout';
 import { MainDashboard } from './components/MainDashboard';
 import { Analytics } from './components/AnalyticsTabbed';
 import { Predictions } from './components/Predictions';
-import { ResourceOptimization } from './components/ResourceOptimization';
 import { Alerts } from './components/Alerts';
 import { Reports } from './components/ReportsTabbed';
 import { DataCollection } from './components/DataCollection';
@@ -55,7 +54,7 @@ export interface FeatureContribution {
 }
 
 export type DiseaseFilter = 'all' | 'cholera' | 'malaria';
-export type NavigationTab = 'dashboard' | 'data-collection' | 'predictions' | 'resources' | 'analytics' | 'reports' | 'alerts' | 'settings' | 'profile';
+export type NavigationTab = 'dashboard' | 'data-collection' | 'predictions' | 'analytics' | 'reports' | 'alerts' | 'settings' | 'profile';
 export type UserRole = 'chv' | 'official';
 
 function App() {
@@ -88,8 +87,6 @@ function App() {
         return <DataCollection userRole={userRole} />;
       case 'predictions':
         return <Predictions />;
-      case 'resources':
-        return <ResourceOptimization />;
       case 'analytics':
         return <Analytics />;
       case 'reports':

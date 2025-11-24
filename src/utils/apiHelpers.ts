@@ -1,3 +1,77 @@
+// Fetch outbreak predictions from backend model for all sub-counties/diseases
+export async function fetchOutbreakPredictions(): Promise<any[]> {
+  // Get all sub-counties and their features
+  const { getAllSubCounties } = await import('../data/mockData');
+  const subCounties = getAllSubCounties();
+  // Prepare batch request: for each sub-county, create cholera and malaria prediction requests
+  const batchItems: any[] = [];
+  subCounties.forEach((sub) => {
+    // Cholera: expects unimproved_sanitation_rate, avg_rainfall
+    batchItems.push({
+      sub_county: sub.name,
+      county: sub.county,
+      disease: 'cholera',
+      features: [
+        sub.xaiData.cholera.features.find(f => f.name === 'unimproved_sanitation_rate')?.value ?? 0,
+        sub.xaiData.cholera.features.find(f => f.name === 'avg_rainfall')?.value ?? 0,
+        sub.xaiData.cholera.features.find(f => f.name === 'mean_ndvi')?.value ?? 0,
+        sub.xaiData.cholera.features.find(f => f.name === 'avg_temp')?.value ?? 0,
+      ],
+    });
+    // Malaria: expects mean_ndvi, avg_temp
+    batchItems.push({
+      sub_county: sub.name,
+      county: sub.county,
+      disease: 'malaria',
+      features: [
+        sub.xaiData.malaria.features.find(f => f.name === 'unimproved_sanitation_rate')?.value ?? 0,
+        sub.xaiData.malaria.features.find(f => f.name === 'avg_rainfall')?.value ?? 0,
+        sub.xaiData.malaria.features.find(f => f.name === 'mean_ndvi')?.value ?? 0,
+        sub.xaiData.malaria.features.find(f => f.name === 'avg_temp')?.value ?? 0,
+      ],
+    });
+  });
+  // Call the batch endpoint
+  const response = await fetch('http://localhost:5000/predict/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(batchItems),
+  });
+  const predictions = await response.json();
+  // Attach predictions to the batchItems for easy mapping
+  return batchItems.map((item, i) => ({
+    ...item,
+    riskScore: typeof predictions[i]?.probability === 'number' ? predictions[i].probability : 0,
+  }));
+}
+// Fetch outbreak data (mock implementation, returns sub-county case data)
+export async function fetchOutbreakData(): Promise<any[]> {
+  // For now, use the mock data from getAllSubCounties and flatten to a row format
+  // Each sub-county will be returned as a row for both diseases, with a 'cases' property
+  const { getAllSubCounties } = await import('../data/mockData');
+  const subCounties = getAllSubCounties();
+  // Simulate a delay
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  // For demo, create mock case numbers for each disease
+  const rows: any[] = [];
+  subCounties.forEach((sub) => {
+    // Cholera row
+    rows.push({
+      sub_county: sub.name,
+      county: sub.county,
+      disease: 'cholera',
+      cases: Math.round(sub.choleraRisk * 100),
+    });
+    // Malaria row
+    rows.push({
+      sub_county: sub.name,
+      county: sub.county,
+      disease: 'malaria',
+      cases: Math.round(sub.malariaRisk * 100),
+    });
+  });
+  return rows;
+}
 import { CaseReport, ModelFeatures } from '../data/mockData';
 
 /**
@@ -80,14 +154,15 @@ export async function getPrediction(data: PredictionRequest): Promise<Prediction
   });
   const result = await response.json();
 
-  // Return a minimal prediction response; you can expand this as needed
+  // Use the 'probability' field from backend as the risk score
+  const prob = typeof result.probability === 'number' ? result.probability : 0;
   return {
     county: data.county,
     sub_county: data.sub_county,
     disease: data.disease,
-    outbreak_probability: typeof result.prediction === 'number' ? result.prediction : 0,
-    outbreak_prediction: typeof result.prediction === 'number' ? (result.prediction > 0.5 ? 1 : 0) : 0,
-    risk_score: typeof result.prediction === 'number' ? result.prediction : 0,
+    outbreak_probability: prob,
+    outbreak_prediction: prob > 0.5 ? 1 : 0,
+    risk_score: prob,
     xai_explanation: {
       base_risk: 0,
       feature_contributions: [
@@ -96,7 +171,7 @@ export async function getPrediction(data: PredictionRequest): Promise<Prediction
         { feature: 'mean_ndvi', value: data.features.mean_ndvi, contribution: 0, description: '' },
         { feature: 'avg_temp', value: data.features.avg_temp, contribution: 0, description: '' }
       ],
-      final_risk: typeof result.prediction === 'number' ? result.prediction : 0
+      final_risk: prob
     }
   };
 }

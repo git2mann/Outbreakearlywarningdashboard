@@ -1,6 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+// Helper to group by key
+function groupBy<T>(arr: T[], key: keyof T): Record<string, T[]> {
+  return arr.reduce<Record<string, T[]>>((acc, item) => {
+    const groupKey = String(item[key]);
+    (acc[groupKey] = acc[groupKey] || []).push(item);
+    return acc;
+  }, {});
+}
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Select } from './ui/select';
+import { Select, SelectTrigger, SelectContent, SelectItem } from './ui/select';
 import { Button } from './ui/button';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Badge } from './ui/badge';
@@ -13,241 +21,224 @@ export function Analytics() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
   const [selectedDisease, setSelectedDisease] = useState<'all' | 'cholera' | 'malaria'>('all');
   const [selectedCounty, setSelectedCounty] = useState<string>('all');
+  const [data, setData] = useState<any[]>([]);
+  const [kpis, setKpis] = useState<any>(null);
+  const [weeklyTrends, setWeeklyTrends] = useState<any[]>([]);
+  const [monthlyComparison, setMonthlyComparison] = useState<any[]>([]);
+  const [countyData, setCountyData] = useState<any[]>([]);
+  const [environmentalData, setEnvironmentalData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    setLoading(true);
+    // Fetch all analytics data from backend endpoints
+    Promise.all([
+      fetch('http://localhost:5000/data/outbreak').then(res => res.json()),
+      fetch('http://localhost:5000/data/kpis').then(res => res.json()),
+      fetch('http://localhost:5000/data/weekly_trends').then(res => res.json()),
+      fetch('http://localhost:5000/data/monthly_comparison').then(res => res.json()),
+      fetch('http://localhost:5000/data/county_data').then(res => res.json()),
+      fetch('http://localhost:5000/data/environmental').then(res => res.json()),
+    ])
+      .then(([data, kpis, weeklyTrends, monthlyComparison, countyData, environmentalData]) => {
+        setData(data);
+        setKpis(kpis);
+        setWeeklyTrends(weeklyTrends);
+        setMonthlyComparison(monthlyComparison);
+        setCountyData(countyData);
+        setEnvironmentalData(environmentalData);
+        setLoading(false);
+      })
+      .catch(e => {
+        setError('Failed to load analytics data');
+        setLoading(false);
+      });
+  }, []);
+
+  if (isLoading || loading) {
     return <AnalyticsSkeleton />;
   }
+  if (error) {
+    return <div className="text-red-500 p-4">{error}</div>;
+  }
+  if (!kpis) {
+    return null;
+  }
 
-  // Generate dynamic data based on filters
+  // Real data: Weekly trends (group by week, sum cases by disease)
   const getWeeklyTrends = () => {
-    const baseData = [
-      { week: 'W1', cholera: 45, malaria: 120, total: 165 },
-      { week: 'W2', cholera: 52, malaria: 145, total: 197 },
-      { week: 'W3', cholera: 68, malaria: 132, total: 200 },
-      { week: 'W4', cholera: 85, malaria: 158, total: 243 },
-    ];
-
-    // Apply county multiplier
-    const countyMultiplier = selectedCounty === 'all' ? 1 : 
-      selectedCounty === 'baringo' ? 1.2 : 
-      selectedCounty === 'turkana' ? 1.5 :
-      selectedCounty === 'kisumu' ? 0.9 :
-      selectedCounty === 'nairobi' ? 0.3 : 0.7;
-
-    return baseData.map(item => ({
-      ...item,
-      cholera: Math.round(item.cholera * countyMultiplier),
-      malaria: Math.round(item.malaria * countyMultiplier),
-      total: Math.round(item.total * countyMultiplier)
-    }));
+    let filtered = data;
+    if (selectedCounty !== 'all') filtered = filtered.filter(d => d.county.toLowerCase() === selectedCounty);
+    if (selectedDisease !== 'all') filtered = filtered.filter(d => d.disease.toLowerCase() === selectedDisease);
+    const byWeek = groupBy(filtered, 'week');
+    return Object.entries(byWeek).map(([week, rows]) => {
+      const cholera = rows.filter((r: any) => r.disease.toLowerCase() === 'cholera').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+      const malaria = rows.filter((r: any) => r.disease.toLowerCase() === 'malaria').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+      return { week, cholera, malaria, total: cholera + malaria };
+    }).sort((a, b) => a.week.localeCompare(b.week));
   };
 
+  // Real data: Monthly/quarter/year comparison (group by year/month/quarter, sum cases)
   const getMonthlyComparison = () => {
-    const monthData = timeRange === 'week' ? 
-      [
-        { month: 'W1', cholera: 58, malaria: 134, outbreaks: 1 },
-        { month: 'W2', cholera: 67, malaria: 156, outbreaks: 1 },
-        { month: 'W3', cholera: 72, malaria: 142, outbreaks: 2 },
-        { month: 'W4', cholera: 89, malaria: 167, outbreaks: 2 },
-      ] :
-      timeRange === 'quarter' ?
-      [
-        { month: 'Q1', cholera: 856, malaria: 1678, outbreaks: 12 },
-        { month: 'Q2', cholera: 923, malaria: 1834, outbreaks: 15 },
-        { month: 'Q3', cholera: 1045, malaria: 2012, outbreaks: 18 },
-      ] :
-      timeRange === 'year' ?
-      [
-        { month: '2022', cholera: 3245, malaria: 6234, outbreaks: 42 },
-        { month: '2023', cholera: 3567, malaria: 6789, outbreaks: 48 },
-        { month: '2024', cholera: 3892, malaria: 7123, outbreaks: 53 },
-      ] :
-      [
-        { month: 'Aug', cholera: 234, malaria: 456, outbreaks: 3 },
-        { month: 'Sep', cholera: 312, malaria: 523, outbreaks: 5 },
-        { month: 'Oct', cholera: 289, malaria: 601, outbreaks: 4 },
-        { month: 'Nov', cholera: 421, malaria: 689, outbreaks: 7 },
-      ];
-
-    const countyMultiplier = selectedCounty === 'all' ? 1 : 
-      selectedCounty === 'baringo' ? 1.1 : 
-      selectedCounty === 'turkana' ? 1.3 :
-      selectedCounty === 'kisumu' ? 0.8 :
-      selectedCounty === 'nairobi' ? 0.4 : 0.6;
-
-    return monthData.map(item => ({
-      ...item,
-      cholera: Math.round(item.cholera * countyMultiplier),
-      malaria: Math.round(item.malaria * countyMultiplier),
-      outbreaks: Math.round(item.outbreaks * countyMultiplier)
-    }));
+    let filtered = data;
+    if (selectedCounty !== 'all') filtered = filtered.filter(d => d.county.toLowerCase() === selectedCounty);
+    if (selectedDisease !== 'all') filtered = filtered.filter(d => d.disease.toLowerCase() === selectedDisease);
+    if (timeRange === 'year') {
+      const byYear = groupBy(filtered, 'year');
+      return Object.entries(byYear).map(([year, rows]) => {
+        const cholera = rows.filter((r: any) => r.disease.toLowerCase() === 'cholera').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+        const malaria = rows.filter((r: any) => r.disease.toLowerCase() === 'malaria').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+        const outbreaks = rows.reduce((sum: number, r: any) => sum + Number(r.outbreak), 0);
+        return { month: year, cholera, malaria, outbreaks };
+      });
+    }
+    // For month/quarter, use week or parse month from week string
+    const byMonth = groupBy(filtered, 'week');
+    return Object.entries(byMonth).map(([week, rows]) => {
+      const cholera = rows.filter((r: any) => r.disease.toLowerCase() === 'cholera').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+      const malaria = rows.filter((r: any) => r.disease.toLowerCase() === 'malaria').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+      const outbreaks = rows.reduce((sum: number, r: any) => sum + Number(r.outbreak), 0);
+      return { month: week, cholera, malaria, outbreaks };
+    });
   };
 
+  // Real data: Disease distribution (sum cases by disease, using same time filter as KPIs)
   const getDiseaseDistribution = () => {
-    let choleraValue = 1247;
-    let malariaValue = 2269;
-
-    // Apply county filter
-    if (selectedCounty !== 'all') {
-      const multiplier = selectedCounty === 'baringo' ? 0.15 : 
-        selectedCounty === 'turkana' ? 0.18 :
-        selectedCounty === 'kisumu' ? 0.12 :
-        selectedCounty === 'nairobi' ? 0.05 : 0.08;
-      choleraValue = Math.round(choleraValue * multiplier);
-      malariaValue = Math.round(malariaValue * multiplier);
+    // Use the same periodRows logic as getKPIs
+    let filtered = data;
+    if (selectedCounty !== 'all') filtered = filtered.filter((d: any) => d.county.toLowerCase() === selectedCounty);
+    if (selectedDisease !== 'all') filtered = filtered.filter((d: any) => d.disease.toLowerCase() === selectedDisease);
+    let periodRows = filtered;
+    if (timeRange === 'week') {
+      const weeks = [...new Set(filtered.map((r: any) => r.week))].sort();
+      const lastWeek = weeks[weeks.length - 1];
+      periodRows = filtered.filter((r: any) => r.week === lastWeek);
+    } else if (timeRange === 'month') {
+      const weeks = [...new Set(filtered.map((r: any) => r.week))].sort();
+      const last4 = weeks.slice(-4);
+      periodRows = filtered.filter((r: any) => last4.includes(r.week));
+    } else if (timeRange === 'quarter') {
+      const weeks = [...new Set(filtered.map((r: any) => r.week))].sort();
+      const last12 = weeks.slice(-12);
+      periodRows = filtered.filter((r: any) => last12.includes(r.week));
+    } else if (timeRange === 'year') {
+      periodRows = filtered;
     }
-
-    // Apply disease filter
-    if (selectedDisease === 'cholera') {
-      return [{ name: 'Cholera', value: choleraValue, color: '#3b82f6' }];
-    } else if (selectedDisease === 'malaria') {
-      return [{ name: 'Malaria', value: malariaValue, color: '#f97316' }];
-    }
-
+    // Always show both diseases for the Pie chart, regardless of selectedDisease
+    const choleraValue = periodRows.filter((r: any) => r.disease.toLowerCase() === 'cholera').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+    const malariaValue = periodRows.filter((r: any) => r.disease.toLowerCase() === 'malaria').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
     return [
       { name: 'Cholera', value: choleraValue, color: '#3b82f6' },
       { name: 'Malaria', value: malariaValue, color: '#f97316' },
     ];
   };
 
+  // Real data: County or sub-county breakdown
   const getCountyData = () => {
     if (selectedCounty !== 'all') {
-      // Show sub-counties when a specific county is selected
-      const subCounties = {
-        baringo: [
-          { name: 'Baringo_Sub1', cases: 145, color: '#ef4444' },
-          { name: 'Baringo_Sub2', cases: 98, color: '#f97316' },
-          { name: 'Baringo_Sub3', cases: 67, color: '#f59e0b' },
-        ],
-        turkana: [
-          { name: 'Turkana_Sub1', cases: 198, color: '#ef4444' },
-          { name: 'Turkana_Sub2', cases: 156, color: '#f97316' },
-          { name: 'Turkana_Sub3', cases: 112, color: '#f59e0b' },
-        ],
-        kisumu: [
-          { name: 'Kisumu_Sub1', cases: 134, color: '#f97316' },
-          { name: 'Kisumu_Sub2', cases: 89, color: '#f59e0b' },
-          { name: 'Kisumu_Sub3', cases: 56, color: '#eab308' },
-        ],
-        default: [
-          { name: 'Sub1', cases: 120, color: '#ef4444' },
-          { name: 'Sub2', cases: 85, color: '#f97316' },
-          { name: 'Sub3', cases: 62, color: '#f59e0b' },
-        ]
-      };
-      return subCounties[selectedCounty as keyof typeof subCounties] || subCounties.default;
+      // Sub-county breakdown for selected county
+      const filtered = data.filter(d => d.county.toLowerCase() === selectedCounty);
+      const bySub = groupBy(filtered, 'sub_county');
+      return Object.entries(bySub).map(([sub, rows], i) => ({
+        name: sub,
+        cases: rows.reduce((sum: number, r: any) => sum + Number(r.cases), 0),
+        color: ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#94a3b8'][i % 5]
+      }));
     }
-
-    // Show counties when "all" is selected
-    return [
-      { name: 'Turkana', cases: 245, color: '#ef4444' },
-      { name: 'Baringo', cases: 198, color: '#f97316' },
-      { name: 'Kisumu', cases: 167, color: '#f59e0b' },
-      { name: 'Kilifi', cases: 134, color: '#eab308' },
-      { name: 'Others', cases: 503, color: '#94a3b8' },
-    ];
+    // County breakdown
+    const byCounty = groupBy(data, 'county');
+    return Object.entries(byCounty).map(([county, rows], i) => ({
+      name: county,
+      cases: rows.reduce((sum: number, r: any) => sum + Number(r.cases), 0),
+      color: ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#94a3b8'][i % 5]
+    }));
   };
 
+  // Real data: Environmental factors (average by disease)
   const getEnvironmentalData = () => {
-    const data = [
-      { factor: 'High Temp', cholera: 0.45, malaria: 0.78 },
-      { factor: 'Heavy Rain', cholera: 0.62, malaria: 0.85 },
-      { factor: 'Poor Sanitation', cholera: 0.88, malaria: 0.23 },
-      { factor: 'High NDVI', cholera: 0.12, malaria: 0.67 },
+    let filtered = data;
+    if (selectedCounty !== 'all') filtered = filtered.filter(d => d.county.toLowerCase() === selectedCounty);
+    if (selectedDisease !== 'all') filtered = filtered.filter(d => d.disease.toLowerCase() === selectedDisease);
+    // Example: show average of each factor by disease
+    const choleraRows = filtered.filter((r: any) => r.disease.toLowerCase() === 'cholera');
+    const malariaRows = filtered.filter((r: any) => r.disease.toLowerCase() === 'malaria');
+    return [
+      {
+        factor: 'High Temp',
+        cholera: choleraRows.length ? choleraRows.reduce((sum: number, r: any) => sum + Number(r.avg_temp), 0) / choleraRows.length : 0,
+        malaria: malariaRows.length ? malariaRows.reduce((sum: number, r: any) => sum + Number(r.avg_temp), 0) / malariaRows.length : 0,
+      },
+      {
+        factor: 'Heavy Rain',
+        cholera: choleraRows.length ? choleraRows.reduce((sum: number, r: any) => sum + Number(r.avg_rainfall), 0) / choleraRows.length : 0,
+        malaria: malariaRows.length ? malariaRows.reduce((sum: number, r: any) => sum + Number(r.avg_rainfall), 0) / malariaRows.length : 0,
+      },
+      {
+        factor: 'Poor Sanitation',
+        cholera: choleraRows.length ? choleraRows.reduce((sum: number, r: any) => sum + Number(r.unimproved_sanitation_rate), 0) / choleraRows.length : 0,
+        malaria: malariaRows.length ? malariaRows.reduce((sum: number, r: any) => sum + Number(r.unimproved_sanitation_rate), 0) / malariaRows.length : 0,
+      },
+      {
+        factor: 'High NDVI',
+        cholera: choleraRows.length ? choleraRows.reduce((sum: number, r: any) => sum + Number(r.mean_ndvi), 0) / choleraRows.length : 0,
+        malaria: malariaRows.length ? malariaRows.reduce((sum: number, r: any) => sum + Number(r.mean_ndvi), 0) / malariaRows.length : 0,
+      },
     ];
-
-    if (selectedDisease === 'cholera') {
-      return data.map(d => ({ ...d, malaria: 0 }));
-    } else if (selectedDisease === 'malaria') {
-      return data.map(d => ({ ...d, cholera: 0 }));
-    }
-
-    return data;
   };
 
-  // Calculate KPIs based on filters
-  const getKPIs = () => {
-    // Base values for a week
-    const baseCholeraWeek = 312;
-    const baseMalariaWeek = 487;
-    const baseOutbreaksWeek = 2;
-    const baseReportsWeek = 85;
-
-    // Scale based on time range
-    let timeMultiplier = 1;
-    let periodLabel = 'week';
-    
-    switch (timeRange) {
-      case 'week':
-        timeMultiplier = 1;
+    // Real data: Calculate KPIs based on filters
+    const getKPIs = () => {
+      let filtered = data;
+      if (selectedCounty !== 'all') filtered = filtered.filter((d: any) => d.county.toLowerCase() === selectedCounty);
+      if (selectedDisease !== 'all') filtered = filtered.filter((d: any) => d.disease.toLowerCase() === selectedDisease);
+      // Filter by time range (e.g., last N weeks)
+      let periodLabel = timeRange;
+      let periodRows = filtered;
+      if (timeRange === 'week') {
+        // Last week only
+        const weeks = [...new Set(filtered.map((r: any) => r.week))].sort();
+        const lastWeek = weeks[weeks.length - 1];
+        periodRows = filtered.filter((r: any) => r.week === lastWeek);
         periodLabel = 'week';
-        break;
-      case 'month':
-        timeMultiplier = 4;
+      } else if (timeRange === 'month') {
+        // Last 4 weeks
+        const weeks = [...new Set(filtered.map((r: any) => r.week))].sort();
+        const last4 = weeks.slice(-4);
+        periodRows = filtered.filter((r: any) => last4.includes(r.week));
         periodLabel = 'month';
-        break;
-      case 'quarter':
-        timeMultiplier = 12;
+      } else if (timeRange === 'quarter') {
+        // Last 12 weeks
+        const weeks = [...new Set(filtered.map((r: any) => r.week))].sort();
+        const last12 = weeks.slice(-12);
+        periodRows = filtered.filter((r: any) => last12.includes(r.week));
         periodLabel = 'quarter';
-        break;
-      case 'year':
-        timeMultiplier = 52;
+      } else if (timeRange === 'year') {
+        // All data
+        periodRows = filtered;
         periodLabel = 'year';
-        break;
-    }
-
-    let choleraValue = Math.round(baseCholeraWeek * timeMultiplier);
-    let malariaValue = Math.round(baseMalariaWeek * timeMultiplier);
-    let outbreaks = Math.round(baseOutbreaksWeek * timeMultiplier);
-    let reports = Math.round(baseReportsWeek * timeMultiplier);
-
-    // Apply county filter
-    if (selectedCounty !== 'all') {
-      const countyMultiplier = selectedCounty === 'baringo' ? 0.15 : 
-        selectedCounty === 'turkana' ? 0.18 :
-        selectedCounty === 'kisumu' ? 0.12 :
-        selectedCounty === 'nairobi' ? 0.05 : 0.08;
-      
-      choleraValue = Math.round(choleraValue * countyMultiplier);
-      malariaValue = Math.round(malariaValue * countyMultiplier);
-      outbreaks = Math.max(1, Math.round(outbreaks * countyMultiplier));
-      reports = Math.round(reports * countyMultiplier);
-    }
-
-    // Apply disease filter for outbreaks and reports
-    if (selectedDisease === 'cholera') {
-      outbreaks = Math.max(1, Math.round(outbreaks * 0.4)); // Cholera typically has fewer outbreaks
-      reports = Math.round(reports * 0.45); // Adjust reports for cholera only
-    } else if (selectedDisease === 'malaria') {
-      outbreaks = Math.max(1, Math.round(outbreaks * 0.6)); // Malaria has more outbreaks
-      reports = Math.round(reports * 0.55); // Adjust reports for malaria only
-    }
-
-    // Apply disease filter for total cases
-    let totalCases = 0;
-    if (selectedDisease === 'cholera') {
-      totalCases = choleraValue;
-    } else if (selectedDisease === 'malaria') {
-      totalCases = malariaValue;
-    } else {
-      totalCases = choleraValue + malariaValue;
-    }
-
-    return {
-      totalCases,
-      activeOutbreaks: outbreaks,
-      avgRisk: selectedDisease === 'cholera' ? 0.62 : selectedDisease === 'malaria' ? 0.75 : 0.68,
-      reportsSubmitted: reports,
-      periodLabel
+      }
+      const choleraValue = periodRows.filter((r: any) => r.disease.toLowerCase() === 'cholera').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+      const malariaValue = periodRows.filter((r: any) => r.disease.toLowerCase() === 'malaria').reduce((sum: number, r: any) => sum + Number(r.cases), 0);
+      const outbreaks = periodRows.reduce((sum: number, r: any) => sum + Number(r.outbreak), 0);
+      const reports = periodRows.length;
+      // Calculate average risk score (example: mean of avg_temp normalized)
+      let avgRisk = 0;
+      if (periodRows.length > 0) {
+        avgRisk = periodRows.reduce((sum: number, r: any) => sum + Number(r.avg_temp), 0) / periodRows.length / 40; // crude normalization
+      }
+      return {
+        cholera: choleraValue,
+        malaria: malariaValue,
+        totalCases: choleraValue + malariaValue,
+        activeOutbreaks: outbreaks,
+        reportsSubmitted: reports,
+        avgRisk,
+        periodLabel
+      };
     };
-  };
 
-  const weeklyTrends = getWeeklyTrends();
-  const monthlyComparison = getMonthlyComparison();
-  const diseaseDistribution = getDiseaseDistribution();
-  const countyData = getCountyData();
-  const environmentalData = getEnvironmentalData();
-  const kpis = getKPIs();
+  // All analytics data is now fetched from the backend
 
   const counties = ['All Counties', 'Baringo', 'Turkana', 'Kisumu', 'Kilifi', 'Nairobi', 'Machakos', 'Mombasa', 'Kakamega'];
 
@@ -271,70 +262,6 @@ export function Analytics() {
           </Button>
         </div>
 
-        {/* Filters */}
-        <Card className="dark:bg-gray-800/50 dark:border-gray-700 backdrop-blur-sm shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-white flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
-                <Filter className="h-4 w-4 text-white" />
-              </div>
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Time Range */}
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">Time Range</label>
-                <div className="flex flex-wrap gap-2">
-                  {(['week', 'month', 'quarter', 'year'] as const).map((range) => (
-                    <Button
-                      key={range}
-                      variant={timeRange === range ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setTimeRange(range)}
-                      className={timeRange === range ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'dark:border-gray-600'}
-                    >
-                      {range.charAt(0).toUpperCase() + range.slice(1)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Disease Filter */}
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">Disease</label>
-                <div className="flex flex-wrap gap-2">
-                  {(['all', 'cholera', 'malaria'] as const).map((disease) => (
-                    <Button
-                      key={disease}
-                      variant={selectedDisease === disease ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedDisease(disease)}
-                      className={selectedDisease === disease ? 'bg-gradient-to-r from-orange-600 to-orange-700' : 'dark:border-gray-600'}
-                    >
-                      {disease.charAt(0).toUpperCase() + disease.slice(1)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* County Filter */}
-              <div>
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">County</label>
-                <select
-                  value={selectedCounty}
-                  onChange={(e) => setSelectedCounty(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm"
-                >
-                  {counties.map(county => (
-                    <option key={county} value={county.toLowerCase().replace(' ', '-')}>{county}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -459,48 +386,7 @@ export function Analytics() {
             </CardContent>
           </Card>
 
-          {/* Disease Distribution */}
-          <Card className="dark:bg-gray-800/50 dark:border-gray-700 backdrop-blur-sm shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-b border-gray-200 dark:border-gray-700">
-              <CardTitle className="text-gray-900 dark:text-white">Disease Distribution</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={diseaseDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {diseaseDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(17, 24, 39, 0.95)', 
-                      border: '1px solid #374151',
-                      borderRadius: '8px',
-                      color: '#fff'
-                    }} 
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center gap-6 mt-4 flex-wrap">
-                {diseaseDistribution.map((entry) => (
-                  <div key={entry.name} className="flex items-center gap-2">
-                    <div className={`w-4 h-4 rounded ${entry.name === 'Cholera' ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{entry.name}: {entry.value.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* County Distribution */}
           <Card className="dark:bg-gray-800/50 dark:border-gray-700 backdrop-blur-sm shadow-xl">

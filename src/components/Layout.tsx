@@ -27,7 +27,6 @@ export function Layout({ children, activeTab, onTabChange, userRole, onRoleChang
   const officialNavItems: { id: NavigationTab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'predictions', label: 'Predictions', icon: TrendingUp },
-    { id: 'resources', label: 'Resources', icon: Package },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'alerts', label: 'Alerts', icon: Bell },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Select } from './ui/select';
 import { Button } from './ui/button';
@@ -14,7 +14,33 @@ export function Analytics() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
   const [selectedDisease, setSelectedDisease] = useState<'all' | 'cholera' | 'malaria'>('all');
   const [selectedCounty, setSelectedCounty] = useState<string>('all');
+
   const [activeTab, setActiveTab] = useState('overview');
+  const [monthlyComparison, setMonthlyComparison] = useState<any[]>([]);
+  const [countyData, setCountyData] = useState<any[]>([]);
+  const [environmentalData, setEnvironmentalData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch analytics data from backend
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetch('http://localhost:5000/data/monthly_comparison').then(res => res.json()),
+      fetch('http://localhost:5000/data/county_data').then(res => res.json()),
+      fetch('http://localhost:5000/data/environmental').then(res => res.json()),
+    ])
+      .then(([monthlyComparison, countyData, environmentalData]) => {
+        setMonthlyComparison(monthlyComparison);
+        setCountyData(countyData);
+        setEnvironmentalData(environmentalData);
+        setLoading(false);
+      })
+      .catch(e => {
+        setError('Failed to load analytics data');
+        setLoading(false);
+      });
+  }, [timeRange, selectedDisease, selectedCounty]);
 
   if (isLoading) {
     return <AnalyticsSkeleton />;
@@ -43,124 +69,9 @@ export function Analytics() {
     }));
   };
 
-  const getMonthlyComparison = () => {
-    const monthData = timeRange === 'week' ? 
-      [
-        { month: 'W1', cholera: 58, malaria: 134, outbreaks: 1 },
-        { month: 'W2', cholera: 67, malaria: 156, outbreaks: 1 },
-        { month: 'W3', cholera: 72, malaria: 142, outbreaks: 2 },
-        { month: 'W4', cholera: 89, malaria: 167, outbreaks: 2 },
-      ] :
-      timeRange === 'quarter' ?
-      [
-        { month: 'Q1', cholera: 856, malaria: 1678, outbreaks: 12 },
-        { month: 'Q2', cholera: 923, malaria: 1834, outbreaks: 15 },
-        { month: 'Q3', cholera: 1045, malaria: 2012, outbreaks: 18 },
-      ] :
-      timeRange === 'year' ?
-      [
-        { month: '2022', cholera: 3245, malaria: 6234, outbreaks: 42 },
-        { month: '2023', cholera: 3567, malaria: 6789, outbreaks: 48 },
-        { month: '2024', cholera: 3892, malaria: 7123, outbreaks: 53 },
-      ] :
-      [
-        { month: 'Aug', cholera: 234, malaria: 456, outbreaks: 3 },
-        { month: 'Sep', cholera: 312, malaria: 523, outbreaks: 5 },
-        { month: 'Oct', cholera: 289, malaria: 601, outbreaks: 4 },
-        { month: 'Nov', cholera: 421, malaria: 689, outbreaks: 7 },
-      ];
 
-    const countyMultiplier = selectedCounty === 'all' ? 1 : 
-      selectedCounty === 'baringo' ? 1.1 : 
-      selectedCounty === 'turkana' ? 1.3 :
-      selectedCounty === 'kisumu' ? 0.8 :
-      selectedCounty === 'nairobi' ? 0.4 : 0.6;
 
-    return monthData.map(item => ({
-      ...item,
-      cholera: Math.round(item.cholera * countyMultiplier),
-      malaria: Math.round(item.malaria * countyMultiplier),
-      outbreaks: Math.round(item.outbreaks * countyMultiplier)
-    }));
-  };
 
-  const getDiseaseDistribution = () => {
-    let choleraValue = 1247;
-    let malariaValue = 2269;
-
-    if (selectedCounty !== 'all') {
-      const multiplier = selectedCounty === 'baringo' ? 0.15 : 
-        selectedCounty === 'turkana' ? 0.18 :
-        selectedCounty === 'kisumu' ? 0.12 :
-        selectedCounty === 'nairobi' ? 0.05 : 0.08;
-      choleraValue = Math.round(choleraValue * multiplier);
-      malariaValue = Math.round(malariaValue * multiplier);
-    }
-
-    if (selectedDisease === 'cholera') {
-      return [{ name: 'Cholera', value: choleraValue, color: '#3b82f6' }];
-    } else if (selectedDisease === 'malaria') {
-      return [{ name: 'Malaria', value: malariaValue, color: '#f97316' }];
-    }
-
-    return [
-      { name: 'Cholera', value: choleraValue, color: '#3b82f6' },
-      { name: 'Malaria', value: malariaValue, color: '#f97316' },
-    ];
-  };
-
-  const getCountyData = () => {
-    if (selectedCounty !== 'all') {
-      const subCounties = {
-        baringo: [
-          { name: 'Baringo_Sub1', cases: 145, color: '#ef4444' },
-          { name: 'Baringo_Sub2', cases: 98, color: '#f97316' },
-          { name: 'Baringo_Sub3', cases: 67, color: '#f59e0b' },
-        ],
-        turkana: [
-          { name: 'Turkana_Sub1', cases: 198, color: '#ef4444' },
-          { name: 'Turkana_Sub2', cases: 156, color: '#f97316' },
-          { name: 'Turkana_Sub3', cases: 112, color: '#f59e0b' },
-        ],
-        kisumu: [
-          { name: 'Kisumu_Sub1', cases: 134, color: '#f97316' },
-          { name: 'Kisumu_Sub2', cases: 89, color: '#f59e0b' },
-          { name: 'Kisumu_Sub3', cases: 56, color: '#eab308' },
-        ],
-        default: [
-          { name: 'Sub1', cases: 120, color: '#ef4444' },
-          { name: 'Sub2', cases: 85, color: '#f97316' },
-          { name: 'Sub3', cases: 62, color: '#f59e0b' },
-        ]
-      };
-      return subCounties[selectedCounty as keyof typeof subCounties] || subCounties.default;
-    }
-
-    return [
-      { name: 'Turkana', cases: 245, color: '#ef4444' },
-      { name: 'Baringo', cases: 198, color: '#f97316' },
-      { name: 'Kisumu', cases: 167, color: '#f59e0b' },
-      { name: 'Kilifi', cases: 134, color: '#eab308' },
-      { name: 'Others', cases: 503, color: '#94a3b8' },
-    ];
-  };
-
-  const getEnvironmentalData = () => {
-    const data = [
-      { factor: 'High Temp', cholera: 0.45, malaria: 0.78 },
-      { factor: 'Heavy Rain', cholera: 0.62, malaria: 0.85 },
-      { factor: 'Poor Sanitation', cholera: 0.88, malaria: 0.23 },
-      { factor: 'High NDVI', cholera: 0.12, malaria: 0.67 },
-    ];
-
-    if (selectedDisease === 'cholera') {
-      return data.map(d => ({ ...d, malaria: 0 }));
-    } else if (selectedDisease === 'malaria') {
-      return data.map(d => ({ ...d, cholera: 0 }));
-    }
-
-    return data;
-  };
 
   const getKPIs = () => {
     const baseCholeraWeek = 312;
@@ -226,9 +137,10 @@ export function Analytics() {
   const kpis = getKPIs();
 
   return (
+
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Header with Filters */}
+        {/* Header */}
         <div className="mb-6 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-4 animate-fadeIn">
             <div>
@@ -247,56 +159,6 @@ export function Analytics() {
               Export Report
             </Button>
           </div>
-
-          {/* Filters Bar */}
-          <Card className="glass-card shadow-xl hover-lift animate-slideInRight" style={{ animationDelay: '0.1s' }}>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-700">Filters:</span>
-                </div>
-                
-                <select
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value as any)}
-                  className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm cursor-pointer"
-                >
-                  <option value="week">Last Week</option>
-                  <option value="month">Last Month</option>
-                  <option value="quarter">Last Quarter</option>
-                  <option value="year">Last Year</option>
-                </select>
-
-                <select
-                  value={selectedDisease}
-                  onChange={(e) => setSelectedDisease(e.target.value as any)}
-                  className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm cursor-pointer"
-                >
-                  <option value="all">All Diseases</option>
-                  <option value="cholera">Cholera Only</option>
-                  <option value="malaria">Malaria Only</option>
-                </select>
-
-                <select
-                  value={selectedCounty}
-                  onChange={(e) => setSelectedCounty(e.target.value)}
-                  className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm cursor-pointer"
-                >
-                  <option value="all">All Counties</option>
-                  <option value="baringo">Baringo</option>
-                  <option value="turkana">Turkana</option>
-                  <option value="kisumu">Kisumu</option>
-                  <option value="nairobi">Nairobi</option>
-                  <option value="kilifi">Kilifi</option>
-                </select>
-
-                <Badge variant="outline" className="ml-auto">
-                  {selectedCounty === 'all' ? 'National View' : selectedCounty.charAt(0).toUpperCase() + selectedCounty.slice(1)}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* KPI Cards */}
@@ -402,39 +264,7 @@ export function Analytics() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="glass-card border-0 shadow-premium hover-lift animate-scaleIn" style={{ animationDelay: '0.6s' }}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg shadow-lg">
-                      <Activity className="h-5 w-5 text-white" />
-                    </div>
-                    Disease Distribution
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={getDiseaseDistribution()}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={(entry) => `${entry.name}: ${entry.value}`}
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {getDiseaseDistribution().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
+              {/* Weekly Case Trends */}
               <Card className="glass-card border-0 shadow-premium hover-lift animate-scaleIn" style={{ animationDelay: '0.7s' }}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
@@ -462,6 +292,54 @@ export function Analytics() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
+              {/* Pie Chart for Weekly Distribution */}
+              <Card className="glass-card border-0 shadow-premium hover-lift animate-scaleIn" style={{ animationDelay: '0.8s' }}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg shadow-lg">
+                      <PieChart className="h-5 w-5 text-white" />
+                    </div>
+                    Weekly Disease Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={(() => {
+                          // Sum up cholera and malaria cases for the latest week
+                          const weekly = getWeeklyTrends();
+                          if (!weekly.length) return [];
+                          const last = weekly[weekly.length - 1];
+                          return [
+                            { name: 'Cholera', value: last.cholera, color: '#3b82f6' },
+                            { name: 'Malaria', value: last.malaria, color: '#f97316' },
+                          ];
+                        })()}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {(() => {
+                          const weekly = getWeeklyTrends();
+                          if (!weekly.length) return null;
+                          const last = weekly[weekly.length - 1];
+                          return [
+                            <Cell key="cell-cholera" fill="#3b82f6" />,
+                            <Cell key="cell-malaria" fill="#f97316" />,
+                          ];
+                        })()}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
@@ -478,7 +356,7 @@ export function Analytics() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={getMonthlyComparison()}>
+                  <BarChart data={monthlyComparison}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                     <XAxis dataKey="month" className="text-gray-600 dark:text-gray-400" />
                     <YAxis className="text-gray-600 dark:text-gray-400" />
@@ -509,13 +387,13 @@ export function Analytics() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={getCountyData()} layout="vertical">
+                  <BarChart data={countyData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                     <XAxis type="number" className="text-gray-600 dark:text-gray-400" />
                     <YAxis dataKey="name" type="category" className="text-gray-600 dark:text-gray-400" width={100} />
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none' }} />
                     <Bar dataKey="cases" name="Total Cases">
-                      {getCountyData().map((entry, index) => (
+                      {countyData.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Bar>
@@ -538,7 +416,7 @@ export function Analytics() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={getEnvironmentalData()}>
+                  <BarChart data={environmentalData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                     <XAxis dataKey="factor" className="text-gray-600 dark:text-gray-400" />
                     <YAxis className="text-gray-600 dark:text-gray-400" />
