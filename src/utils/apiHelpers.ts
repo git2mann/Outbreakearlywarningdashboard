@@ -55,31 +55,48 @@ export interface CaseSubmission {
  * Get predictions for a specific county/sub-county
  */
 export async function getPrediction(data: PredictionRequest): Promise<PredictionResponse> {
-  // TODO: Replace with actual Flask API call
-  // const response = await fetch('/api/predict', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(data)
-  // });
-  // return response.json();
-  
-  // Mock response for now
+  // Determine endpoint based on disease
+  let endpoint = '';
+  if (data.disease === 'Cholera') {
+    endpoint = 'http://localhost:5000/predict/cholera';
+  } else if (data.disease === 'Malaria') {
+    endpoint = 'http://localhost:5000/predict/malaria';
+  } else {
+    throw new Error('Unsupported disease type');
+  }
+
+  // Prepare features array in the order expected by the model (as in simulated_outbreak_data_v15.csv)
+  const features = [
+    data.features.unimproved_sanitation_rate,
+    data.features.avg_rainfall,
+    data.features.mean_ndvi,
+    data.features.avg_temp
+  ];
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ features })
+  });
+  const result = await response.json();
+
+  // Return a minimal prediction response; you can expand this as needed
   return {
     county: data.county,
     sub_county: data.sub_county,
     disease: data.disease,
-    outbreak_probability: 0.85,
-    outbreak_prediction: 1,
-    risk_score: 0.85,
+    outbreak_probability: typeof result.prediction === 'number' ? result.prediction : 0,
+    outbreak_prediction: typeof result.prediction === 'number' ? (result.prediction > 0.5 ? 1 : 0) : 0,
+    risk_score: typeof result.prediction === 'number' ? result.prediction : 0,
     xai_explanation: {
-      base_risk: 0.05,
+      base_risk: 0,
       feature_contributions: [
-        { feature: 'avg_temp', value: data.features.avg_temp, contribution: 0.45, description: 'High temperature' },
-        { feature: 'avg_rainfall', value: data.features.avg_rainfall, contribution: 0.20, description: 'Moderate rainfall' },
-        { feature: 'mean_ndvi', value: data.features.mean_ndvi, contribution: 0.10, description: 'Vegetation index' },
-        { feature: 'unimproved_sanitation_rate', value: data.features.unimproved_sanitation_rate, contribution: 0.05, description: 'Sanitation conditions' }
+        { feature: 'unimproved_sanitation_rate', value: data.features.unimproved_sanitation_rate, contribution: 0, description: '' },
+        { feature: 'avg_rainfall', value: data.features.avg_rainfall, contribution: 0, description: '' },
+        { feature: 'mean_ndvi', value: data.features.mean_ndvi, contribution: 0, description: '' },
+        { feature: 'avg_temp', value: data.features.avg_temp, contribution: 0, description: '' }
       ],
-      final_risk: 0.85
+      final_risk: typeof result.prediction === 'number' ? result.prediction : 0
     }
   };
 }
