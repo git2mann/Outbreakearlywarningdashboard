@@ -1,7 +1,7 @@
 
   # Outbreak Early Warning Dashboard
 
-  This is a code bundle for Outbreak Early Warning Dashboard. The original project is available at https://www.figma.com/design/Gt9ed6Omtzp5AiPj1koM03/Outbreak-Early-Warning-Dashboard.
+  This is a code bundle for Outbreak Early Warning Dashboard.
 
 
 ## Backend (Flask API)
